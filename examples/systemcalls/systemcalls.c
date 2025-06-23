@@ -1,4 +1,7 @@
 #include "systemcalls.h"
+#include <unistd.h>
+#include <stdlib.h>
+#include <sys/wait.h>
 
 /**
  * @param cmd the command to execute with system()
@@ -16,7 +19,11 @@ bool do_system(const char *cmd)
  *   and return a boolean true if the system() call completed with success
  *   or false() if it returned a failure
 */
-
+    int ret = system(cmd);
+    if (ret == -1) {
+        // system call failed
+        return false;
+    }
     return true;
 }
 
@@ -58,9 +65,24 @@ bool do_exec(int count, ...)
  *   as second argument to the execv() command.
  *
 */
+    
+    fork();
+
+    if (execv(command[0], command) == -1) {
+        // execv failed
+        va_end(args);
+        return false;
+    }
+
+    int status;    
+    wait(&status);
 
     va_end(args);
 
+    if (status == -1) {
+        // execv failed
+        return false;
+    }
     return true;
 }
 
@@ -92,6 +114,9 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
  *   The rest of the behaviour is same as do_exec()
  *
 */
+    char CmdBuffer[100];
+    sprintf(CmdBuffer, "cat file1.txt > %s", outputfile);
+    execlp(command[0], command[0], "-c", CmdBuffer, (char *)NULL);
 
     va_end(args);
 
